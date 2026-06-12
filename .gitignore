@@ -1,0 +1,39 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+build/
+
+# Generated files
+*.g.dart
+*.freezed.dart
+
+# IDE
+.idea/
+.vscode/
+
+# Android
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Environment
+.env
+
+# Firebase
+google-services.json
+GoogleService-Info.plist
