@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../viewmodels/drink_list_view_model.dart';
-import 'widgets/cart_item_row_view.dart';
+import 'shopping_cart_view.dart';
 import 'widgets/drink_row_view.dart';
 
 // DrinkListView 是主畫面，也就是使用者看到的飲料訂購頁。
@@ -17,9 +17,6 @@ class DrinkListView extends ConsumerStatefulWidget {
 // 這裡需要 TextEditingController，所以使用 StatefulWidget。
 // ConsumerState 讓我們可以使用 ref.watch / ref.read 讀取 Riverpod Provider。
 class _DrinkListViewState extends ConsumerState<DrinkListView> {
-  // 控制訂單備註輸入框的文字。
-  final TextEditingController _noteController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
@@ -32,24 +29,12 @@ class _DrinkListViewState extends ConsumerState<DrinkListView> {
   }
 
   @override
-  void dispose() {
-    // Widget 被銷毀時釋放 controller，避免記憶體洩漏。
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     // watch 代表監聽 Riverpod 狀態。
     // ViewModel 更新 state 時，這個畫面會重新 build。
     final state = ref.watch(drinkListViewModelProvider);
     // notifier 是真正的 ViewModel，用來呼叫方法。
     final viewModel = ref.read(drinkListViewModelProvider.notifier);
-
-    // 當 ViewModel 清空 note 時，同步清空輸入框。
-    if (_noteController.text != state.note) {
-      _noteController.text = state.note;
-    }
 
     // 如果 ViewModel 標記訂單已送出，顯示提示對話框。
     if (state.didSubmitOrder) {
@@ -78,6 +63,25 @@ class _DrinkListViewState extends ConsumerState<DrinkListView> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('飲料訂購'),
+        actions: [
+          IconButton(
+            tooltip: '購物車',
+            onPressed: state.cartItems.isEmpty
+                ? null
+                : () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const ShoppingCartView(),
+                      ),
+                    );
+                  },
+            icon: Badge.count(
+              count: state.totalQuantity,
+              isLabelVisible: state.cartItems.isNotEmpty,
+              child: const Icon(Icons.shopping_cart),
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -107,54 +111,6 @@ class _DrinkListViewState extends ConsumerState<DrinkListView> {
                     onAdd: () => viewModel.addToCart(drink),
                   ),
                 ),
-                // 只有購物車有資料時才顯示購物車區塊。
-                if (state.cartItems.isNotEmpty) ...[
-                  const _SectionHeader(title: '購物車'),
-                  ...state.cartItems.map(
-                    // Dismissible 讓使用者可以滑動刪除購物車項目。
-                    (item) => Dismissible(
-                      key: ValueKey(item.id),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        color: Colors.red.shade600,
-                        child: const Icon(Icons.delete, color: Colors.white),
-                      ),
-                      onDismissed: (_) => viewModel.removeFromCart(item),
-                      child: CartItemRowView(item: item),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: TextField(
-                      controller: _noteController,
-                      // 最少一行，最多三行。
-                      minLines: 1,
-                      maxLines: 3,
-                      decoration: const InputDecoration(labelText: '訂單備註'),
-                      onChanged: viewModel.updateNote,
-                    ),
-                  ),
-                  ListTile(
-                    title: const Text('總計'),
-                    trailing: Text(
-                      // r'$' 避免 $ 被 Dart 當成字串插值符號。
-                      r'$'
-                      '${state.totalPrice}',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FilledButton.icon(
-                      // 按下按鈕後交給 ViewModel 送出訂單。
-                      onPressed: viewModel.submitOrder,
-                      icon: const Icon(Icons.send),
-                      label: const Text('送出訂單'),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -180,6 +136,26 @@ class _DrinkListViewState extends ConsumerState<DrinkListView> {
             ),
         ],
       ),
+      bottomNavigationBar: state.cartItems.isEmpty
+          ? null
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const ShoppingCartView(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.shopping_cart),
+                  label: Text(
+                    '購物車 ${state.totalQuantity} 項 · \$${state.totalPrice}',
+                  ),
+                ),
+              ),
+            ),
     );
   }
 }

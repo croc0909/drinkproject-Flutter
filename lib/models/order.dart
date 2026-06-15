@@ -6,11 +6,13 @@ class Order {
     required this.phone,
     required this.items,
     required this.totalPrice,
+    this.orderNo,
     this.status,
     this.createdAt,
   });
 
   final int id;
+  final String? orderNo;
   final String customerName;
   final String phone;
   final List<OrderItem> items;
@@ -22,6 +24,7 @@ class Order {
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
       id: json['id'] as int,
+      orderNo: json['order_no'] as String?,
       customerName: json['customer_name'] as String,
       phone: json['phone'] as String,
       items: (json['items'] as List<dynamic>)
@@ -31,6 +34,46 @@ class Order {
       status: json['status'] as String?,
       createdAt: json['created_at'] as String?,
     );
+  }
+
+  String get displayOrderNo {
+    if (orderNo != null && orderNo!.isNotEmpty) return orderNo!;
+    return '#$id';
+  }
+
+  int get totalQuantity {
+    return items.fold(0, (total, item) => total + item.quantity);
+  }
+
+  String get statusText {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return '待處理';
+      case 'confirmed':
+        return '已確認';
+      case 'preparing':
+        return '製作中';
+      case 'completed':
+        return '已完成';
+      case 'cancelled':
+      case 'canceled':
+        return '已取消';
+      case final value? when value.isNotEmpty:
+        return value;
+      default:
+        return '處理中';
+    }
+  }
+
+  String get createdAtText {
+    final value = createdAt;
+    if (value == null || value.isEmpty) return '未提供訂購時間';
+
+    final date = DateTime.tryParse(value);
+    if (date == null) return value;
+    final local = date.toLocal();
+    return '${local.year}/${_two(local.month)}/${_two(local.day)} '
+        '${_two(local.hour)}:${_two(local.minute)}';
   }
 }
 
@@ -67,6 +110,15 @@ class OrderItem {
       subtotal: json['subtotal'] as int?,
     );
   }
+
+  String get displayName {
+    if (drinkName != null && drinkName!.isNotEmpty) return drinkName!;
+    return '飲品 #$drinkId';
+  }
+
+  int get displaySubtotal {
+    return subtotal ?? ((unitPrice ?? 0) * quantity);
+  }
 }
 
 // CreateOrderRequest 是送出訂單時要傳給後端的資料。
@@ -74,19 +126,16 @@ class OrderItem {
 class CreateOrderRequest {
   const CreateOrderRequest({
     required this.customerName,
-    required this.phone,
     required this.items,
   });
 
   final String customerName;
-  final String phone;
   final List<CreateOrderItemRequest> items;
 
   // 把送出訂單的資料轉成後端需要的 JSON 格式。
   Map<String, dynamic> toJson() {
     return {
       'customer_name': customerName,
-      'phone': phone,
       'items': items.map((item) => item.toJson()).toList(),
     };
   }
@@ -116,3 +165,5 @@ class CreateOrderItemRequest {
     };
   }
 }
+
+String _two(int value) => value.toString().padLeft(2, '0');

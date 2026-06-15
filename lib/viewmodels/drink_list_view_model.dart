@@ -5,6 +5,7 @@ import '../models/cart_item.dart';
 import '../models/drink.dart';
 import '../models/order.dart';
 import '../services/api_client.dart';
+import 'member_view_model.dart';
 
 // ApiClient 的 Riverpod Provider。
 // ViewModel 可以透過 ref.read(apiClientProvider) 取得 API 服務。
@@ -44,6 +45,10 @@ class DrinkListState {
   // 購物車總金額。
   int get totalPrice {
     return cartItems.fold(0, (total, item) => total + item.subtotal);
+  }
+
+  int get totalQuantity {
+    return cartItems.fold(0, (total, item) => total + item.quantity);
   }
 
   // 建立一份新狀態。
@@ -156,19 +161,11 @@ class DrinkListViewModel extends Notifier<DrinkListState> {
       return;
     }
 
-    // 把購物車資料轉成後端需要的 CreateOrderRequest。
-    final orderRequest = CreateOrderRequest(
-      customerName: '測試客人',
-      phone: '0912345678',
-      items: state.cartItems.map((item) {
-        return CreateOrderItemRequest(
-          drinkId: item.drink.id,
-          quantity: item.quantity,
-          sweetness: '半糖',
-          iceLevel: '少冰',
-        );
-      }).toList(),
-    );
+    final token = await ref.read(memberViewModelProvider.notifier).readToken();
+    if (token == null || token.isEmpty) {
+      state = state.copyWith(errorMessage: '請先登入會員後再送出訂單。');
+      return;
+    }
 
     _log(
       'submitOrder -> items: ${state.cartItems.length}, total: ${state.totalPrice}',
@@ -176,7 +173,22 @@ class DrinkListViewModel extends Notifier<DrinkListState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final order = await _apiClient.submitOrder(orderRequest);
+      final user = await ref.read(apiClientProvider).fetchMe(token: token);
+
+      // 把購物車資料轉成後端需要的 CreateOrderRequest。
+      final orderRequest = CreateOrderRequest(
+        customerName: user.name,
+        items: state.cartItems.map((item) {
+          return CreateOrderItemRequest(
+            drinkId: item.drink.id,
+            quantity: item.quantity,
+            sweetness: '半糖',
+            iceLevel: '少冰',
+          );
+        }).toList(),
+      );
+
+      final order = await _apiClient.submitOrder(orderRequest, token: token);
       _log('submitOrder <- success, order id: ${order.id}');
       // 成功後清空購物車與備註，並讓 View 顯示成功提示。
       state = state.copyWith(

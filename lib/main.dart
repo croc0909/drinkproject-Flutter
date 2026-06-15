@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'views/drink_list_view.dart';
+import 'views/home_view.dart';
 
 // Flutter App 的入口點，類似 SwiftUI 專案裡的 @main App。
 void main() {
@@ -23,14 +23,13 @@ class DrinkOrderingApp extends StatelessWidget {
       // 關閉 Debug 模式右上角的 DEBUG 標籤。
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // 用咖啡色產生 Material 3 的主題色系。
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF7A4A2A),
+          seedColor: const Color(0xFF14336F),
         ),
         useMaterial3: true,
       ),
       // App 啟動後第一個顯示的畫面。
-      home: const DrinkListView(),
+      home: const HomeView(),
     );
   }
 }

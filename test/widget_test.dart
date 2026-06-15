@@ -13,7 +13,10 @@ class FakeApiClient extends ApiClient {
   }
 
   @override
-  Future<Order> submitOrder(CreateOrderRequest orderRequest) async {
+  Future<Order> submitOrder(
+    CreateOrderRequest orderRequest, {
+    required String token,
+  }) async {
     return const Order(
       id: 1,
       customerName: '測試客人',
@@ -25,7 +28,7 @@ class FakeApiClient extends ApiClient {
 }
 
 void main() {
-  testWidgets('shows drink ordering title', (tester) async {
+  testWidgets('shows home tabs and opens drink ordering page', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -34,6 +37,12 @@ void main() {
         child: const DrinkOrderingApp(),
       ),
     );
+
+    expect(find.text('商城兌換'), findsWidgets);
+    expect(find.text('點餐'), findsOneWidget);
+
+    await tester.tap(find.text('點餐'));
+    await tester.pumpAndSettle();
 
     expect(find.text('飲料訂購'), findsOneWidget);
   });
