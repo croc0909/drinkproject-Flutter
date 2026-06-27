@@ -12,6 +12,9 @@ class ShoppingCartView extends ConsumerStatefulWidget {
 }
 
 class _ShoppingCartViewState extends ConsumerState<ShoppingCartView> {
+  static const _backgroundColor = Color(0xFFFFF7EB);
+  static const _accentColor = Colors.orange;
+
   final TextEditingController _noteController = TextEditingController();
 
   @override
@@ -51,116 +54,206 @@ class _ShoppingCartViewState extends ConsumerState<ShoppingCartView> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('購物車')),
+      backgroundColor: _backgroundColor,
+      appBar: AppBar(
+        backgroundColor: _backgroundColor,
+        surfaceTintColor: _backgroundColor,
+        centerTitle: true,
+        title: const Text('購物車'),
+        titleTextStyle: const TextStyle(
+          color: Colors.black,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
       body: state.cartItems.isEmpty
-          ? const _EmptyCart()
+          ? _EmptyCart(errorMessage: state.errorMessage)
           : ListView(
-              padding: const EdgeInsets.only(bottom: 96),
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.paddingOf(context).bottom + 18,
+              ),
               children: [
                 if (state.errorMessage != null)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    padding: const EdgeInsets.fromLTRB(22, 8, 22, 20),
                     child: Text(
                       state.errorMessage!,
-                      style: TextStyle(
-                        color: Colors.orange.shade800,
-                        fontSize: 13,
+                      style: const TextStyle(
+                        color: _accentColor,
+                        fontSize: 17,
                       ),
                     ),
                   ),
-                const _SectionHeader(title: '購物車'),
                 ...state.cartItems.map(
-                  (item) => Dismissible(
-                    key: ValueKey(item.id),
-                    direction: DismissDirection.endToStart,
-                    background: Container(
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      color: Colors.red.shade600,
-                      child: const Icon(Icons.delete, color: Colors.white),
+                  (item) => Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 8),
+                    child: CartItemRowView(
+                      item: item,
+                      onDecrease: () => viewModel.decreaseQuantity(item),
+                      onIncrease: () => viewModel.increaseQuantity(item),
+                      onRemove: () => viewModel.removeFromCart(item),
                     ),
-                    onDismissed: (_) => viewModel.removeFromCart(item),
-                    child: CartItemRowView(item: item),
                   ),
                 ),
-                const _SectionHeader(title: '訂單資訊'),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: TextField(
-                    controller: _noteController,
-                    minLines: 1,
-                    maxLines: 3,
-                    decoration: const InputDecoration(labelText: '訂單備註'),
-                    onChanged: viewModel.updateNote,
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(18, 32, 18, 18),
+                  child: Text(
+                    '訂單資訊',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-                ListTile(
-                  title: const Text('總計'),
-                  trailing: Text(
-                    '\$${state.totalPrice}',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                _OrderInfoSection(
+                  controller: _noteController,
+                  totalPrice: state.totalPrice,
+                  onNoteChanged: viewModel.updateNote,
+                ),
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _accentColor,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(62),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: state.isLoading ? null : viewModel.submitOrder,
+                    icon: state.isLoading
+                        ? const SizedBox.square(
+                            dimension: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.send, size: 28),
+                    label: const Text(
+                      '送出訂單',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
               ],
-            ),
-      bottomNavigationBar: state.cartItems.isEmpty
-          ? null
-          : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: FilledButton.icon(
-                  onPressed: state.isLoading ? null : viewModel.submitOrder,
-                  icon: state.isLoading
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.send),
-                  label: const Text('送出訂單'),
-                ),
-              ),
             ),
     );
   }
 }
 
-class _EmptyCart extends StatelessWidget {
-  const _EmptyCart();
+class _OrderInfoSection extends StatelessWidget {
+  const _OrderInfoSection({
+    required this.controller,
+    required this.totalPrice,
+    required this.onNoteChanged,
+  });
+
+  final TextEditingController controller;
+  final int totalPrice;
+  final ValueChanged<String> onNoteChanged;
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.shopping_cart_outlined, size: 58),
-            SizedBox(height: 12),
-            Text('購物車是空的'),
-            SizedBox(height: 6),
-            Text('回到飲料列表，點選 + 加入想喝的飲品。'),
-          ],
-        ),
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+      child: Column(
+        children: [
+          TextField(
+            controller: controller,
+            minLines: 2,
+            maxLines: 4,
+            decoration: InputDecoration(
+              hintText: '訂單備註',
+              hintStyle: TextStyle(
+                color: Colors.grey.shade400,
+                fontSize: 22,
+              ),
+              border: InputBorder.none,
+            ),
+            style: const TextStyle(fontSize: 18),
+            onChanged: onNoteChanged,
+          ),
+          Divider(height: 28, color: Colors.grey.shade300),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 18),
+            child: Row(
+              children: [
+                const Text(
+                  '總計',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '\$$totalPrice',
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: Colors.grey.shade300),
+        ],
       ),
     );
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
+class _EmptyCart extends StatelessWidget {
+  const _EmptyCart({this.errorMessage});
 
-  final String title;
+  final String? errorMessage;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (errorMessage != null) ...[
+              Text(
+                errorMessage!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.orange),
+              ),
+              const SizedBox(height: 24),
+            ],
+            Icon(
+              Icons.shopping_cart_outlined,
+              size: 58,
+              color: Colors.grey.shade600,
             ),
+            const SizedBox(height: 12),
+            const Text(
+              '購物車是空的',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '回到飲料列表，點選 + 加入想喝的飲品。',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -61,27 +61,17 @@ class _DrinkListViewState extends ConsumerState<DrinkListView> {
 
     // Scaffold 是 Material App 常用的頁面骨架，包含 AppBar 和 body。
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        centerTitle: true,
         title: const Text('飲料訂購'),
-        actions: [
-          IconButton(
-            tooltip: '購物車',
-            onPressed: state.cartItems.isEmpty
-                ? null
-                : () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const ShoppingCartView(),
-                      ),
-                    );
-                  },
-            icon: Badge.count(
-              count: state.totalQuantity,
-              isLabelVisible: state.cartItems.isNotEmpty,
-              child: const Icon(Icons.shopping_cart),
-            ),
-          ),
-        ],
+        titleTextStyle: const TextStyle(
+          color: Colors.black,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
       ),
       body: Stack(
         children: [
@@ -94,21 +84,23 @@ class _DrinkListViewState extends ConsumerState<DrinkListView> {
                 // 如果有錯誤訊息，就顯示在列表上方。
                 if (state.errorMessage != null)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    padding: const EdgeInsets.fromLTRB(22, 8, 22, 8),
                     child: Text(
                       state.errorMessage!,
                       style: TextStyle(
-                        color: Colors.orange.shade800,
-                        fontSize: 13,
+                        color: Colors.orange.shade700,
+                        fontSize: 14,
                       ),
                     ),
                   ),
-                const _SectionHeader(title: '飲品'),
                 // 將每一個 Drink 轉成一列 DrinkRowView。
                 ...state.drinks.map(
-                  (drink) => DrinkRowView(
-                    drink: drink,
-                    onAdd: () => viewModel.addToCart(drink),
+                  (drink) => Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 10, 28, 10),
+                    child: DrinkRowView(
+                      drink: drink,
+                      onAdd: () => viewModel.addToCart(drink),
+                    ),
                   ),
                 ),
               ],
@@ -139,9 +131,22 @@ class _DrinkListViewState extends ConsumerState<DrinkListView> {
       bottomNavigationBar: state.cartItems.isEmpty
           ? null
           : SafeArea(
+              top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: FilledButton.icon(
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(50),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 18,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
@@ -149,33 +154,32 @@ class _DrinkListViewState extends ConsumerState<DrinkListView> {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.shopping_cart),
-                  label: Text(
-                    '購物車 ${state.totalQuantity} 項 · \$${state.totalPrice}',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.shopping_cart, size: 22),
+                      const SizedBox(width: 8),
+                      const Text(
+                        '購物車',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${state.totalQuantity} 項・\$${state.totalPrice}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.chevron_right, size: 20),
+                    ],
                   ),
                 ),
               ),
             ),
-    );
-  }
-}
-
-// 區塊標題，例如「飲品」、「購物車」。
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-      ),
     );
   }
 }

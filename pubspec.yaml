@@ -21,3 +21,12 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/BubbleTea.jpg
+    - assets/images/FourSeasons GreenTea.jpg
+    - assets/images/LemonWinterMelon.jpg
+    - assets/images/homeimage1.jpg
+    - assets/images/homeimage2.jpg
+    - assets/images/homeimage3.jpg
+    - assets/images/homeimage4.jpg
+    - assets/images/homeimage5.jpg

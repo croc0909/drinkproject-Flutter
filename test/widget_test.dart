@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fluuter_drinkproject/main.dart';
@@ -28,7 +29,9 @@ class FakeApiClient extends ApiClient {
 }
 
 void main() {
-  testWidgets('shows home tabs and opens drink ordering page', (tester) async {
+  testWidgets('shows landing page and opens drink ordering page', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -38,10 +41,11 @@ void main() {
       ),
     );
 
-    expect(find.text('商城兌換'), findsWidgets);
-    expect(find.text('點餐'), findsOneWidget);
+    expect(find.byType(Image), findsOneWidget);
+    expect(find.text('Your\nHealthy\nStart'), findsOneWidget);
+    expect(find.byIcon(Icons.shopping_bag), findsOneWidget);
 
-    await tester.tap(find.text('點餐'));
+    await tester.tap(find.byIcon(Icons.shopping_bag));
     await tester.pumpAndSettle();
 
     expect(find.text('飲料訂購'), findsOneWidget);

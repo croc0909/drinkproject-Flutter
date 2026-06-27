@@ -144,6 +144,39 @@ class DrinkListViewModel extends Notifier<DrinkListState> {
     );
   }
 
+  // 增加購物車中某一筆項目的數量。
+  void increaseQuantity(CartItem item) {
+    _log('increaseQuantity -> ${item.drink.name}, item id: ${item.id}');
+    final cartItems = state.cartItems.map((cartItem) {
+      if (cartItem.id != item.id) return cartItem;
+      return cartItem.copyWith(quantity: cartItem.quantity + 1);
+    }).toList();
+
+    state = state.copyWith(cartItems: cartItems);
+    _log(
+      'increaseQuantity <- item quantity: ${item.quantity + 1}, total: ${state.totalPrice}',
+    );
+  }
+
+  // 減少購物車中某一筆項目的數量；數量到 0 時移除該項目。
+  void decreaseQuantity(CartItem item) {
+    _log('decreaseQuantity -> ${item.drink.name}, item id: ${item.id}');
+    if (item.quantity <= 1) {
+      removeFromCart(item);
+      return;
+    }
+
+    final cartItems = state.cartItems.map((cartItem) {
+      if (cartItem.id != item.id) return cartItem;
+      return cartItem.copyWith(quantity: cartItem.quantity - 1);
+    }).toList();
+
+    state = state.copyWith(cartItems: cartItems);
+    _log(
+      'decreaseQuantity <- item quantity: ${item.quantity - 1}, total: ${state.totalPrice}',
+    );
+  }
+
   // 更新訂單備註。
   void updateNote(String value) {
     state = state.copyWith(note: value);
