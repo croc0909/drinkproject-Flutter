@@ -53,12 +53,18 @@ class MemberState {
 
 class MemberViewModel extends Notifier<MemberState> {
   @override
-  MemberState build() {
-    return const MemberState();
-  }
+  MemberState build() => const MemberState();
 
   Future<void> loadCurrentUserIfPossible() async {
-    if (state.user != null) return;
+    if (state.user != null) {
+      if (state.message != null) {
+        state = state.copyWith(message: null);
+      }
+      return;
+    }
+    if (state.status == MemberStatus.checkingSession) {
+      return;
+    }
 
     final preferences = await SharedPreferences.getInstance();
     final token = preferences.getString(authTokenKey);
@@ -76,11 +82,10 @@ class MemberViewModel extends Notifier<MemberState> {
         message: '已取得會員資料',
       );
     } catch (error) {
+      debugPrint('[MemberViewModel] saved session expired: $error');
       await preferences.remove(authTokenKey);
-      state = MemberState(
-        status: MemberStatus.failed,
-        message: error.toString(),
-      );
+      // 與 iOS 一致：舊登入失效時靜默回到登入表單，不顯示技術錯誤。
+      state = const MemberState();
     }
   }
 
@@ -92,13 +97,11 @@ class MemberViewModel extends Notifier<MemberState> {
     await _performAuthAction(
       loadingStatus: MemberStatus.signingUp,
       successMessage: '註冊成功',
-      action: () {
-        return ref.read(apiClientProvider).register(
-              phone: phone.trim(),
-              name: name.trim(),
-              password: password,
-            );
-      },
+      action: () => ref.read(apiClientProvider).register(
+            phone: phone.trim(),
+            name: name.trim(),
+            password: password,
+          ),
     );
   }
 
@@ -109,12 +112,10 @@ class MemberViewModel extends Notifier<MemberState> {
     await _performAuthAction(
       loadingStatus: MemberStatus.signingIn,
       successMessage: '登入成功',
-      action: () {
-        return ref.read(apiClientProvider).login(
-              phone: phone.trim(),
-              password: password,
-            );
-      },
+      action: () => ref.read(apiClientProvider).login(
+            phone: phone.trim(),
+            password: password,
+          ),
     );
   }
 
@@ -142,6 +143,7 @@ class MemberViewModel extends Notifier<MemberState> {
     required String successMessage,
     required Future<AuthResponse> Function() action,
   }) async {
+    if (state.isLoading) return;
     state = state.copyWith(status: loadingStatus, message: null);
 
     try {
